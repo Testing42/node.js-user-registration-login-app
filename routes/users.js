@@ -1,10 +1,10 @@
 var express = require('express');
 var router = express.Router();
 var mongojs = require('mongojs');
+const bcrypt = require('bcrypt');
 const { check, validationResult } = require('express-validator');
 var validator = require('validator');
 var db = mongojs('registerapp', ['users']);
-var bcrypt = require('bcryptjs');
 var passport = require('passport'); //this could be used to incoporate facebook or twitter password for example
 var LocalStrategy = require('passport-local').Strategy;
 
@@ -77,20 +77,28 @@ router.post('/register', [
 
         }
 
-        db.users.insert(newUser, function(err, doc) {
-            if (err) {
-                res.send(err);
-            } else {
-                console.log('user added...')
+        bcrypt.genSalt(10, function(err, salt) {
+            bcrypt.hash(newUser.password, salt, function(err, hash) {
+                newUser.password = hash;
 
-                //success message
-                req.flash('success', 'You are registered and can now log in');
+                db.users.insert(newUser, function(err, doc) {
+                    if (err) {
+                        res.send(err);
+                    } else {
+                        console.log('user added...')
 
-                //redirect after registered
-                res.location('/');
-                res.redirect('/');
-            }
+                        //success message
+                        req.flash('success', 'You are registered and can now log in');
+
+                        //redirect after registered
+                        res.location('/');
+                        res.redirect('/');
+                    }
+                });
+            });
         });
+
+
     }
 })
 
